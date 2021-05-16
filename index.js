@@ -1,5 +1,5 @@
 // je require les info de connexion qui sont dans un point env précis en passant en argument la localisation du .env.back 
-require('dotenv').config({ path: `${__dirname}/.env.back` });
+require('dotenv').config();
 
 // on récupére ce dont on a besoin pour monter un seveur https
 const fs = require('fs');
