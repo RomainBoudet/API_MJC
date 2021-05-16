@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "npm run clearRedis && nodemon index.js ",
+    "start": "nodemon index.js ",
     "start-dev": "npm run clearRedis && node index.js ",
     "test": "mocha",
     "clearRedis": "redis-cli --scan --pattern 'mjc:*' | xargs redis-cli DEL"
