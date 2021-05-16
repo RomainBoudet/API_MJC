@@ -1,15 +1,7 @@
 
 node_modules
-BACK/logs/combined.log
-Back/logs/error.log
-.env.front
+logs/combined.log
+logs/error.log
 .env.back
-dist/
-BACK/certificat/key.pem
-BACK/certificat/cert.pem
-FRONT/config/certificat/key.pem
-FRONT/config/certificat/cert.pem
-.DS_Store
-Thumbs.db
-
-yarn-error.log
+certificat/key.pem
+certificat/cert.pem

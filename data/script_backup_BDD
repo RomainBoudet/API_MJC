@@ -1,0 +1,86 @@
+#!/bin/bash
+
+###########################################
+##  Script de backup pour notre BDD MJC  ##
+###########################################
+
+# Un petit script maison pour le backup de notre BDD
+# Il y a surement mieux au vu de mes capacités limités sur Linux, si vous avez des idées d amélioration, you're welcome
+
+
+# Pré-requis pour que ça fonctionne :
+# - avoir installé postfix, mailutils, openssl sur le serveur (et toute leur dépendance)
+# - avoir configuré correctement postfix
+#### Pour faire tourner ce script, cette commande doit vous envoyé un mail
+#### sur votre adresse mail => echo This is the body of the email | mail -s This is the subject line your_email_address
+#### des double quotes " sont nécéssaire, encadrant chaque texte commencant par this-email et this-line dans la commande précédente...
+#### si vous ne receptionner pas un email a chaque commande, faut retourner configurer Postfix...
+# - avoir installé openssl
+
+# Que fait le script :
+# 1) il créer des variables utilisable par le script lui même
+# 2) Il créer un dossier
+# 3) Il fait un dump de la base et en ressort un fichier SQL et envoi un mail si la tache est pas ok
+# 4) Il compresse ce fichier SQL en .zip et envoi un mail si la tache est pas ok
+# 5) Il supprime le fichier sql, on garde que l'archive.
+# 6) Il chifre l'archive via openssl
+# 7) Il envoie cette archive compressé et chiffré par mail, dans le mail qu'on a mis dabs la variable email
+# 8) Il supprime les fichiers sur le serveur plux vieux que la date définit dans la variable keep_day
+
+
+# et pour faire executer ce script on fait appel a CRON :
+# ligne de commande sur le serveur=> crontab -e
+###### et on colle une ligne cron.
+###### Dans le cas d'un scipt script.sh situé dans le dossier /media/
+###### voulant être éffectué a midi et minuit
+###### Sans etre notifié par email => la ligne cron serait :
+# dans la fenetre qui s'est ouverte =>  0 */12 * * * /media/script.sh >/dev/null 2>&1
+
+# plus d'info sur cron => https://crontab-generator.org/ pour faire une ligne
+# et un peu de doc, https://www.hostinger.fr/tutoriels/cron-job/
+
+# Le nom de ma BDD
+db_name=mjc
+# Le dossier ou va être sauvegarder ma BDD
+backupfolder=
+# L'email sur lequel va être envoyé la notification
+email=
+# Password pour le chiffrement
+passw=
+# Le nombre de jour ou on stocke le backup de la BDD et le nom du fichier de backup a la date du jour, jusqu'a la seconde du pg_dump
+keep_day=3
+sqlfile=$backupfolder/Mjc-database-$(date +%d-%m-%Y_%H-%M-%S).sql
+zipfile=$backupfolder/Mjc-database-$(date +%d-%m-%Y_%H-%M-%S).zip
+archivesecure=$backupfolder/Mjc-database-secure$(date +%d-%m-%Y_%H-%M-%S).zip
+
+# Creation du dossier de backup si jamais il est pas déja créer
+mkdir -p $backupfolder
+# Creation du backup
+if pg_dump $db_name > $sqlfile ; then
+   echo 'Sql dump creer'
+else
+   echo 'pg_dump return un code d'erreur' | mailx -s 'ATTENTION aucun backup creer !' $email
+   exit
+fi
+# Compression du backup
+if gzip -c $sqlfile > $zipfile; then
+   echo 'Le backup a ete compresse avec succes !'
+else
+   echo 'Erreur dasn la compression du backup' | mailx -s 'ATTENTION aucun backup creer apres la demande de compression !' $email
+   exit
+fi
+# Suppresssion du fichier SQL, je garde seulement le .zip
+rm $sqlfile
+# Chiffrement du fichier compression via openssl (il s agit de notre bien le plus précieux, pas envie de l envoyé en clair...)
+openssl enc -aes-256-cbc -salt -a -in $zipfile -out $archivesecure -iter 500000 -k $passw
+
+# Envoie du fichier par piece jointe pour le backup // ATTENTION fuite MAIL => consultation sur messagerie sécurise par clé U2F
+# (Et penser a bien configurer postfix pour TLS)
+# ATTENTION si on utilise un mail google dans la configuration smtp (sudo apt-get install ssmtp) Google refuse l'envoi de PJ chiffré => aucun mail ne sera envoyé
+# Dans ce cas, remplacer $archivesecure par $zipfile dans la ligne suivante.
+# on définit le type de fichier  via --content ; le fichier a mettre en piece jointe via --attach
+echo $archivesecure | mailx --content-type=application/zip --attach=$archivesecure -s 'Backup de la BDD mjc creer avec succes !' $email
+# Suppression des vieux backup
+find $backupfolder -mtime +$keep_day -delete
+
+

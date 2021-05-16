@@ -1,0 +1,8 @@
+
+{
+"events": {
+    "restart":"redis-cli --scan --pattern 'mjc:*' | xargs redis-cli DEL"
+   
+}
+
+}
