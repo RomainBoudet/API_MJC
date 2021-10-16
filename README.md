@@ -2,7 +2,7 @@
 
 ![texte alt](data/medieval.jpg)
 
- <img align="left" src="conception/image/logo-noir.png" alt="drawing" width="90"/>  <h1 >Welcome of the repository  of the Guardians of the legend ! </h1>
+ <img align="left" src="data/logo-noir.png" alt="drawing" width="90"/>  <h1 >Welcome of the repository  of the Guardians of the legend ! </h1>
 
 ## Description
 
